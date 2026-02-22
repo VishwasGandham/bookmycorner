@@ -1,103 +1,117 @@
-import React from "react";
-import { Facebook, Instagram } from "lucide-react";
+import React, { useState } from "react";
+import { Facebook, Instagram, Plus, Minus } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer: React.FC = () => {
+  const [open, setOpen] = useState<string | null>(null);
+
+  const toggle = (section: string) => {
+    setOpen(open === section ? null : section);
+  };
+
+  const Accordion = ({
+    id,
+    title,
+    children,
+  }: {
+    id: string;
+    title: string;
+    children: React.ReactNode;
+  }) => (
+    <div className="border-b border-white/20 md:border-none">
+      <button
+        onClick={() => toggle(id)}
+        className="w-full flex items-center justify-between py-4 md:py-0"
+      >
+        <h3 className="font-semibold text-left">{title}</h3>
+        <span className="md:hidden">
+          {open === id ? <Minus size={18} /> : <Plus size={18} />}
+        </span>
+      </button>
+
+      <div
+        className={`overflow-hidden transition-all duration-300 md:block ${
+          open === id ? "max-h-96 pb-4" : "max-h-0 md:max-h-none"
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+
   return (
     <footer className="w-full bg-gradient-to-r from-[#091e42] via-[#172b4d] to-[#091e42] text-white pt-10 pb-5">
-      {/* container */}
-      <div className="max-w-6xl mx-auto px-5 flex flex-wrap justify-between gap-8">
-        {/* logo */}
-        <div className="flex-1 min-w-[200px]">
+      <div className="max-w-6xl mx-auto px-5 grid md:grid-cols-4 gap-6">
+        {/* Brand */}
+        <div>
           <h2 className="font-bold text-xl mb-2">BookMyCorner</h2>
           <p className="text-sm text-white/80">
             Your trusted property partner.
           </p>
         </div>
 
-        {/* quick links */}
-        <div className="flex-1 min-w-[200px]">
-          <h3 className="font-semibold mb-2">Quick Links</h3>
-          <ul className="space-y-1 text-sm">
+        {/* Quick links */}
+        <Accordion id="quick" title="Quick Links">
+          <ul className="space-y-2 text-sm text-white/80">
             <li>
-              <Link to="/dashboard" className="hover:underline">
-                Recently searched
-              </Link>
+              <Link to="/dashboard">Recently searched</Link>
             </li>
             <li>
-              <Link to="/dashboard" className="hover:underline">
-                Recently viewed
-              </Link>
+              <Link to="/dashboard">Recently viewed</Link>
             </li>
             <li>
-              <Link to="/dashboard" className="hover:underline">
-                Shortlisted
-              </Link>
+              <Link to="/dashboard">Shortlisted</Link>
             </li>
             <li>
-              <Link to="/dashboard" className="hover:underline">
-                Contacted
-              </Link>
+              <Link to="/dashboard">Contacted</Link>
             </li>
           </ul>
-        </div>
+        </Accordion>
 
-        {/* about */}
-        <div className="flex-1 min-w-[200px]">
-          <h3 className="font-semibold mb-2">About</h3>
-          <ul className="space-y-1 text-sm">
+        {/* About */}
+        <Accordion id="about" title="About">
+          <ul className="space-y-2 text-sm text-white/80">
             <li>
-              <Link to="/about" className="hover:underline">
-                About Us
-              </Link>
+              <Link to="/about">About Us</Link>
             </li>
             <li>
-              <Link to="/privacy-policy" className="hover:underline">
-                Privacy Policy
-              </Link>
+              <Link to="/privacy-policy">Privacy Policy</Link>
             </li>
           </ul>
-        </div>
+        </Accordion>
 
-        {/* support */}
-        <div className="flex-1 min-w-[220px]">
-          <h3 className="font-semibold mb-2">Support</h3>
+        {/* Support */}
+        <Accordion id="support" title="Support">
+          <div className="text-sm text-white/80 space-y-2">
+            <p>
+              Corporate office: SK 11 Sector 117, Noida 201304 <br />
+              Lucknow office: 74 Ashok Vihar, Shaheed Path, Lucknow 226002
+            </p>
 
-          <p className="text-sm text-white/80 mb-2">
-            Corporate office: SK 11 Sector 117, Noida 201304 <br />
-            Lucknow office: 74 Ashok Vihar, Shaheed Path, Lucknow 226002
-          </p>
+            <p>
+              Email:{" "}
+              <a
+                href="mailto:bookmycorner7@gmail.com"
+                className="hover:underline"
+              >
+                bookmycorner7@gmail.com
+              </a>
+            </p>
 
-          <p className="text-sm mb-1">
-            Email:{" "}
-            <a
-              href="mailto:bookmycorner7@gmail.com"
-              className="hover:underline"
-            >
-              bookmycorner7@gmail.com
-            </a>{" "}
-            ,{" "}
-            <a
-              href="mailto:contact@bookmycorner.com"
-              className="hover:underline"
-            >
-              contact@bookmycorner.com
-            </a>
-          </p>
-
-          <p className="text-sm">
-            Mobile:{" "}
-            <a href="tel:7310365365" className="hover:underline">
-              7310-365-365
-            </a>
-          </p>
-        </div>
+            <p>
+              Mobile:{" "}
+              <a href="tel:7310365365" className="hover:underline">
+                7310-365-365
+              </a>
+            </p>
+          </div>
+        </Accordion>
       </div>
 
       {/* socials */}
       <div className="flex justify-center gap-4 mt-8">
         <a
-          href="https://www.facebook.com/profile.php?id=61588457216544&sk=directory_intro"
+          href="https://www.facebook.com/profile.php?id=61588457216544"
           target="_blank"
           rel="noopener noreferrer"
           className="w-9 h-9 rounded-full border border-white/70 flex items-center justify-center hover:bg-white/20 transition"

@@ -14,6 +14,7 @@ import SellerDashboard from "./pages/dashboard/SellerDashboard";
 import PostProperty from "./pages/dashboard/PostProperty";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { Toaster } from "sonner";
 import AboutUs from "./pages/AboutUs";
 
 const router = createBrowserRouter([
@@ -72,6 +73,7 @@ const App = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
+        <Toaster position="top-center" richColors />
         <RouterProvider router={router} />
       </AuthProvider>
     </HelmetProvider>

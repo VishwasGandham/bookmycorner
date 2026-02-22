@@ -78,3 +78,27 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* Hide scrollbar (horizontal tabs hero etc) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE */
+  scrollbar-width: none; /* Firefox */
+}
+
+@keyframes slideProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-slide-progress {
+  width: 100%;
+  animation: slideProgress 3s linear forwards;
+}

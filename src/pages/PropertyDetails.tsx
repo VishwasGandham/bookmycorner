@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useRef } from "react";
 import {
   MapPin,
   Phone,
@@ -35,13 +36,30 @@ const PropertyDetails = () => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
+  const [progressKey, setProgressKey] = useState(0);
   const [modalType, setModalType] = useState<
     "callback" | "site_visit" | "best_price" | "whatsapp" | null
   >(null);
   const [isFavorited, setIsFavorited] = useState(false);
+  const contactRef = useRef<HTMLDivElement | null>(null);
   const [favLoading, setFavLoading] = useState(false);
 
-  // Track view
+  /* AUTO IMAGE CAROUSEL */
+  useEffect(() => {
+    if (!property?.images || property.images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveImage((prev) => {
+        const next = prev === property.images!.length - 1 ? 0 : prev + 1;
+
+        setProgressKey((k) => k + 1); // restart progress animation
+        return next;
+      });
+    }, 3000); // change speed here
+
+    return () => clearInterval(interval);
+  }, [property]);
+
   useViewCounter(id || "");
 
   useEffect(() => {
@@ -50,7 +68,6 @@ const PropertyDetails = () => {
       try {
         const { data, error } = await supabase
           .from("properties")
-          // .select('*, profiles(full_name)')
           .select("*, profiles!owner_id(full_name)")
           .eq("id", id)
           .single();
@@ -67,7 +84,6 @@ const PropertyDetails = () => {
     fetchProperty();
   }, [id]);
 
-  // Check if favorited
   useEffect(() => {
     const checkFavorite = async () => {
       if (!user || !id) return;
@@ -119,9 +135,7 @@ const PropertyDetails = () => {
           text: `Check out this property!`,
           url,
         });
-      } catch {
-        /* cancelled */
-      }
+      } catch {}
     } else {
       await navigator.clipboard.writeText(url);
       alert("Link copied to clipboard!");
@@ -153,7 +167,6 @@ const PropertyDetails = () => {
     );
   }
 
-  // Use placeholder images if none exist
   const images =
     property.images && property.images.length > 0
       ? property.images
@@ -167,7 +180,6 @@ const PropertyDetails = () => {
     return `₹ ${price.toLocaleString()}`;
   };
 
-  // TEMP coordinates without DB (mock)
   const mockCoordsByLocation: Record<string, { lat: number; lng: number }> = {
     "KPHB Colony": { lat: 17.493118806046148, lng: 78.40245349571215 },
     "Budge Budge , Koila Sarak": {
@@ -180,7 +192,6 @@ const PropertyDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/" className="hover:text-primary transition-colors">
           Home
@@ -197,9 +208,7 @@ const PropertyDetails = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Gallery */}
           <div className="space-y-4">
             <div className="aspect-video relative rounded-xl overflow-hidden bg-slate-100">
               <img
@@ -207,6 +216,21 @@ const PropertyDetails = () => {
                 alt={property.title}
                 className="object-cover w-full h-full"
               />
+
+              {/* ✅ ADDED contact icon inside image */}
+              <button
+                onClick={() =>
+                  contactRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                className="absolute bottom-4 right-4 z-40 rounded-full shadow-lg bg-primary text-white p-3"
+                aria-label="Go to contact"
+              >
+                <Phone className="w-5 h-5" />
+              </button>
+
               <div className="absolute top-4 right-4 flex gap-2">
                 <Button
                   variant="secondary"
@@ -228,16 +252,27 @@ const PropertyDetails = () => {
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
+
               <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm flex items-center">
                 <Eye className="w-3 h-3 mr-1" /> {property.views_count || 0}{" "}
                 views
               </div>
+
               {property.is_featured && (
                 <div className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                   ⭐ Featured
                 </div>
               )}
+
+              {/* Premium slide progress bar */}
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-white/30">
+                <div
+                  key={progressKey}
+                  className="h-full bg-white animate-slide-progress"
+                />
+              </div>
             </div>
+
             {images.length > 1 && (
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {images.map((img, idx) => (
@@ -259,9 +294,9 @@ const PropertyDetails = () => {
 
           {/* Property Info */}
           <div>
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-start mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-2">
                   {property.title}
                 </h1>
                 <div className="flex items-center text-muted-foreground">
@@ -270,8 +305,8 @@ const PropertyDetails = () => {
                   {property.location}, {property.city}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-primary">
+              <div className="md:text-right">
+                <div className="text-3xl font-bold text-primary whitespace-nowrap">
                   {formatPrice(property.price)}
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -403,142 +438,105 @@ const PropertyDetails = () => {
               </div>
             </div>
           </div>
-
-          {/* Map Placeholder */}
-          {/* <div className="space-y-4">
-            <h3 className="font-semibold text-xl">Location Map</h3>
-            <div className="w-full h-64 bg-slate-200 rounded-lg flex items-center justify-center text-muted-foreground">
-              {property.latitude && property.longitude ? (
-                <div className="text-center">
-                  <MapPin className="h-8 w-8 mx-auto mb-2 text-red-400" />
-                  <span>
-                    📍 {property.latitude}, {property.longitude}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <MapPin className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                  <span>Map location not provided</span>
-                </div>
-              )}
-            </div>
-          </div> */}
-
-          {/* Map */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-xl">Location Map</h3>
-
-            {coords ? (
-              <div className="w-full h-72 rounded-lg overflow-hidden">
-                <iframe
-                  title="property-map"
-                  width="100%"
-                  height="100%"
-                  loading="lazy"
-                  style={{ border: 0 }}
-                  src={`https://www.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`}
-                />
-              </div>
-            ) : (
-              <div className="w-full h-64 bg-slate-200 rounded-lg flex items-center justify-center text-muted-foreground">
-                <MapPin className="h-8 w-8 mr-2" />
-                Map location not provided
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Sidebar / Contact */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-24 p-6 shadow-lg border-t-4 border-t-primary">
-            <h3 className="text-xl font-bold mb-2">
-              Interested in this property?
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Contact the seller directly to get more information.
-            </p>
-            <div className="space-y-3">
-              <Button
-                className="w-full h-12 text-base"
-                onClick={() => {
-                  setModalType("whatsapp");
-                  trackClick("contact_whatsapp", { propertyId: property.id });
-                }}
-              >
-                <MessageSquare className="mr-2 h-5 w-5" /> Chat on WhatsApp
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base border-primary text-primary hover:bg-primary/5"
-                onClick={() => {
-                  setModalType("callback");
-                  trackClick("contact_callback", { propertyId: property.id });
-                }}
-              >
-                <Phone className="mr-2 h-5 w-5" /> Request Callback
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  setModalType("site_visit");
-                  trackClick("contact_site_visit", { propertyId: property.id });
-                }}
-              >
-                📅 Schedule Site Visit
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                onClick={() => {
-                  setModalType("best_price");
-                  trackClick("contact_best_price", { propertyId: property.id });
-                }}
-              >
-                💰 Get Best Price
-              </Button>
-            </div>
+          <div ref={contactRef}>
+            <Card className="sticky top-24 p-6 shadow-lg border-t-4 border-t-primary">
+              <h3 className="text-xl font-bold mb-2">
+                Interested in this property?
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Contact the seller directly to get more information.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  className="w-full h-12 text-base"
+                  onClick={() => {
+                    setModalType("whatsapp");
+                    trackClick("contact_whatsapp", { propertyId: property.id });
+                  }}
+                >
+                  <MessageSquare className="mr-2 h-5 w-5" /> Chat on WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 text-base border-primary text-primary hover:bg-primary/5"
+                  onClick={() => {
+                    setModalType("callback");
+                    trackClick("contact_callback", { propertyId: property.id });
+                  }}
+                >
+                  <Phone className="mr-2 h-5 w-5" /> Request Callback
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => {
+                    setModalType("site_visit");
+                    trackClick("contact_site_visit", {
+                      propertyId: property.id,
+                    });
+                  }}
+                >
+                  📅 Schedule Site Visit
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                  onClick={() => {
+                    setModalType("best_price");
+                    trackClick("contact_best_price", {
+                      propertyId: property.id,
+                    });
+                  }}
+                >
+                  💰 Get Best Price
+                </Button>
+              </div>
 
-            <div className="mt-6 pt-6 border-t">
-              <h4 className="font-semibold mb-3">Seller Information</h4>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center font-bold text-primary text-lg">
-                  {property.profiles?.full_name?.charAt(0)?.toUpperCase() ||
-                    "S"}
-                </div>
-                <div>
-                  <div className="font-medium">
-                    {property.profiles?.full_name || "Seller"}
+              <div className="mt-6 pt-6 border-t">
+                <h4 className="font-semibold mb-3">Seller Information</h4>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center font-bold text-primary text-lg">
+                    {property.profiles?.full_name?.charAt(0)?.toUpperCase() ||
+                      "S"}
                   </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    {property.is_verified ? (
-                      <>
-                        <Shield className="h-3 w-3 text-green-500" /> Verified
-                        Seller
-                      </>
-                    ) : (
-                      "Seller"
-                    )}
+                  <div>
+                    <div className="font-medium">
+                      {property.profiles?.full_name || "Seller"}
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      {property.is_verified ? (
+                        <>
+                          <Shield className="h-3 w-3 text-green-500" /> Verified
+                          Seller
+                        </>
+                      ) : (
+                        "Seller"
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Views: {property.views_count}</span>
-                <span>Leads: {property.leads_count}</span>
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Views: {property.views_count}</span>
+                  <span>Leads: {property.leads_count}</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  Listed on{" "}
+                  {new Date(property.created_at).toLocaleDateString("en-IN", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                Listed on{" "}
-                {new Date(property.created_at).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
 
